@@ -18,13 +18,12 @@ class Planner:
         self.users_alpha = np.full((num_users, num_arms), 0.1)
         self.users_beta = np.full((num_users, num_arms), 0.1)
         self.users_max_score = np.zeros((num_users, num_arms))
-        self.users_try_or_not = np.zeros((num_users, num_arms))
+        self.users_counter = np.zeros((num_users, num_arms))
         self.current_user = None
         self.current_arm = None
         self.current_round = 0
         self.user_not_to_choose = {}
         for i in range(num_users):
-
             self.user_not_to_choose[i] = set()
 
         """
@@ -53,25 +52,25 @@ class Planner:
         # for each arm, sample a score from the beta distribution of the current user and the current arm
         for i in range(self.num_arms):
             if i not in self.user_not_to_choose[self.current_user]:
-
                 current_sample[i] = np.random.beta(self.users_alpha[self.current_user][i],
                                                    self.users_beta[self.current_user][i])
         if (current_sample.size != 0):
             self.current_arm = np.argmax(current_sample)
-        self.users_try_or_not[self.current_user][self.current_arm] = 1
-        # want to check for every user if he has 0 max score for an arm
+        self.users_counter[self.current_user][self.current_arm] += 1
+
+        # TODO: think about somthing better, maybe use mean score instead of max score
+
+        # every quarter of the phase want to check for every user if he has 0 max score for an arm
         # if so, we want to add it to the set of arms not to choose for this user
-        for i in range(self.num_users):
-            for j in range(self.num_arms):
-                if self.users_max_score[i][j] == 0:
-                    self.user_not_to_choose[i].add(j)
+        if self.current_round % (self.phase_len / 4) == 0:
+            for i in range(self.num_users):
+                for j in range(self.num_arms):
+                    if (self.users_counter[i][j] >= 1000) and (self.users_max_score[i][j] == 0):
+                        self.user_not_to_choose[i].add(j)
+
 
 
         return self.current_arm
-
-
-
-
 
     def notify_outcome(self, reward):
         """
@@ -86,7 +85,6 @@ class Planner:
         self.users_beta[self.current_user][self.current_arm] += \
             self.users_max_score[self.current_user][self.current_arm] - reward
 
-
         # TODO: Use this information for your algorithm
         pass
 
@@ -100,7 +98,3 @@ class Planner:
             current_sample[i] = np.random.beta(self.users_alpha[self.current_user][i],
                                                self.users_beta[self.current_user][i])
         return current_sample
-
-
-
-
