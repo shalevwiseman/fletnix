@@ -161,8 +161,9 @@ def run_simulation(simulation_num):
 
 
 def main():
-    reward = run_simulation(0)
-    print("The total reward of your planner is " + str(reward))
+    for i in range(5):
+        reward = run_simulation(i)
+        print("The total reward of your planner is " + str(reward))
 
 
 if __name__ == '__main__':

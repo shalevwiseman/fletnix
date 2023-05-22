@@ -15,12 +15,15 @@ class Planner:
         self.num_users = num_users
         self.arms_thresh = arms_thresh
         self.users_distribution = users_distribution
-        self.users_picked = np.zeros((num_users,num_arms))
-        self.users_tot_val = np.zeros((num_users, num_arms))
-        self.users_rate = np.zeros((num_users, num_arms))
+        self.users_alpha = np.full((num_users, num_arms), 0.1)
+        self.users_beta = np.full((num_users, num_arms), 0.1)
+        self.users_max_score = np.zeros((num_users, num_arms))
+        self.users_try_or_not = np.zeros((num_users, num_arms))
         self.current_user = None
         self.current_arm = None
-        # creating a dict that hold distribution info about each user
+
+        """
+        # creating a dict that hold distribution info about each user and each arm
         self.user_data = {}
         for i in range(num_users):
             username = f'User{i}'
@@ -28,7 +31,9 @@ class Planner:
 
             for j in range(num_arms):
                 arm_name = f"Arm{j}"
-                self.user_data[username]["arms"][arm_name] = {'mu': 0,'sigma': 1000, 'post_mu': 0, 'post_sigma': 1000, 'sum_satisfaction': 0}
+                self.user_data[username]["arms"][arm_name] = {'mu': 0, 'sigma': 1000, 'post_mu': 0, 'post_sigma': 1000,
+                                                              'sum_satisfaction': 0}
+        """
         # TODO: Decide what/if to store. Could be used in the future
         pass
 
@@ -37,29 +42,33 @@ class Planner:
         :input: the sampled user (integer in the range [0,num_users-1])
         :output: the chosen arm, content to show to the user (integer in the range [0,num_arms-1])
         """
-        user_name = f"User{user_context}"
-        self.user_data[user_name]['N'] += 1
-
-        # Sample from each arm
-        post_samps = np.zeros(self.num_arms)
-        for j in range(self.num_arms):
-            arm_name = f"Arm{j}"
-            post_samps[j] = self.get_mu_from_dist(user_name, arm_name)
-        chosen_arm = np.where(post_samps == post_samps.max())[0][0]
-        #chosen_arm = post_samps.index(max(post_samps))
-        self.current_arm = chosen_arm
         self.current_user = user_context
+        current_sample = np.zeros(self.num_arms)
+        for i in range(self.num_arms):
+            current_sample[i] = np.random.beta(self.users_alpha[self.current_user][i],
+                                               self.users_beta[self.current_user][i])
+        self.current_arm = np.argmax(current_sample)
+        self.users_try_or_not[self.current_user][self.current_arm] = 1
+
+        return self.current_arm
 
 
-        # TODO: This is your place to shine. Go crazy!
-        return chosen_arm
+
+
 
     def notify_outcome(self, reward):
         """
         :input: the sampled reward of the current round.
         """
-        self.update_dist(self.current_user, self.current_arm)
-        self.user_data[f"User{self.current_user}"]["arms"][f"Arm{self.current_arm}"]["sum_satisfaction"] += reward
+        # update the max score of the current arm
+        if reward > self.users_max_score[self.current_user][self.current_arm]:
+            self.users_max_score[self.current_user][self.current_arm] = reward
+
+        # update the alpha and beta of the current arm
+        self.users_alpha[self.current_user][self.current_arm] += reward
+        self.users_beta[self.current_user][self.current_arm] += \
+            self.users_max_score[self.current_user][self.current_arm] - reward
+
 
         # TODO: Use this information for your algorithm
         pass
@@ -69,16 +78,5 @@ class Planner:
         return "id_123456789_987654321"
 
 
-    def get_mu_from_dist(self, user_name, arm):
-        sample_mu = np.random.normal(self.user_data[user_name]['arms'][arm]['post_mu'],
-                                     self.user_data[user_name]['arms'][arm]['post_sigma'])
-        return sample_mu
-
-    def update_dist(self, user_name, arm):
-        prior_sigma = self.user_data[f"User{user_name}"]['sigma']
-        N = self.user_data[f"User{user_name}"]['N']
-        self.user_data[f"User{user_name}"]['arms'][f"Arm{arm}"]['post_sigma'] = np.sqrt((1/ prior_sigma**2 + N)**(-1))
-        self.user_data[f"User{user_name}"]['arms'][f"Arm{arm}"]['post_sigma'] = (self.user_data[f"User{user_name}"]['arms'][f"Arm{arm}"]['post_sigma']**2)\
-                                                               * (self.user_data[f"User{user_name}"]['arms'][f"Arm{arm}"]['sum_satisfaction'])
 
 
