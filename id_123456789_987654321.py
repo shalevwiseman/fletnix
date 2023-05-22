@@ -21,6 +21,11 @@ class Planner:
         self.users_try_or_not = np.zeros((num_users, num_arms))
         self.current_user = None
         self.current_arm = None
+        self.current_round = 0
+        self.user_not_to_choose = {}
+        for i in range(num_users):
+
+            self.user_not_to_choose[i] = set()
 
         """
         # creating a dict that hold distribution info about each user and each arm
@@ -42,13 +47,25 @@ class Planner:
         :input: the sampled user (integer in the range [0,num_users-1])
         :output: the chosen arm, content to show to the user (integer in the range [0,num_arms-1])
         """
+        self.current_round += 1
         self.current_user = user_context
         current_sample = np.zeros(self.num_arms)
+        # for each arm, sample a score from the beta distribution of the current user and the current arm
         for i in range(self.num_arms):
-            current_sample[i] = np.random.beta(self.users_alpha[self.current_user][i],
-                                               self.users_beta[self.current_user][i])
-        self.current_arm = np.argmax(current_sample)
+            if i not in self.user_not_to_choose[self.current_user]:
+
+                current_sample[i] = np.random.beta(self.users_alpha[self.current_user][i],
+                                                   self.users_beta[self.current_user][i])
+        if (current_sample.size != 0):
+            self.current_arm = np.argmax(current_sample)
         self.users_try_or_not[self.current_user][self.current_arm] = 1
+        # want to check for every user if he has 0 max score for an arm
+        # if so, we want to add it to the set of arms not to choose for this user
+        for i in range(self.num_users):
+            for j in range(self.num_arms):
+                if self.users_max_score[i][j] == 0:
+                    self.user_not_to_choose[i].add(j)
+
 
         return self.current_arm
 
@@ -76,6 +93,13 @@ class Planner:
     def get_id(self):
         # TODO: Make sure this function returns your ID, which is the name of this file!
         return "id_123456789_987654321"
+
+    def get_sample(self):
+        current_sample = np.zeros(self.num_arms)
+        for i in range(self.num_arms):
+            current_sample[i] = np.random.beta(self.users_alpha[self.current_user][i],
+                                               self.users_beta[self.current_user][i])
+        return current_sample
 
 
 
