@@ -77,7 +77,12 @@ class MABSimulation:
 
             if (i + 1) % self.phase_len == 0 and with_deactivation:  # satisfied only when it is the end of the phase
                 self.deactivate_arms()
+            """# want to print somthing 10 times during the simulation
+            if (i + 1) % (self.num_rounds // 10) == 0:
+                print("max score: " + str(planner.users_max_score))
+                print(f"user{user_context} got samples {str(planner.get_sample())} \n and chose arm {chosen_arm} and got reward {reward}")"""
 
+        print("max score: " + str(planner.users_max_score))
 
         if time.time() - begin_time > TIME_CAP:
             print("the planner operation is too slow")
@@ -162,8 +167,9 @@ def run_simulation(simulation_num):
 
 
 def main():
-    reward = run_simulation(0)
-    print("The total reward of your planner is " + str(reward))
+    for i in range(1):
+        reward = run_simulation(i)
+        print("The total reward of your planner is " + str(reward))
 
 
 if __name__ == '__main__':
