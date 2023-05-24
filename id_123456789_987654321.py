@@ -19,6 +19,8 @@ class Planner:
         self.users_beta = np.full((num_users, num_arms), 0.1)
         self.users_max_score = np.zeros((num_users, num_arms))
         self.users_counter = np.zeros((num_users, num_arms))
+        self.users_satisfaction = np.zeros((num_users, num_arms))
+        self.users_mean = np.zeros((num_users, num_arms))
         self.current_user = None
         self.current_arm = None
         self.current_round = 0
@@ -62,11 +64,12 @@ class Planner:
 
         # every quarter of the phase want to check for every user if he has 0 max score for an arm
         # if so, we want to add it to the set of arms not to choose for this user
-        if self.current_round % (self.phase_len / 4) == 0:
-            for i in range(self.num_users):
-                for j in range(self.num_arms):
-                    if (self.users_counter[i][j] >= 1000) and (self.users_max_score[i][j] == 0):
-                        self.user_not_to_choose[i].add(j)
+
+        for i in range(self.num_users):
+            for j in range(self.num_arms):
+                if (self.users_max_score[i][j] == 0) and (self.users_counter[i][j] >= 1):
+                    self.user_not_to_choose[i].add(j)
+
 
 
 
@@ -79,6 +82,15 @@ class Planner:
         # update the max score of the current arm
         if reward > self.users_max_score[self.current_user][self.current_arm]:
             self.users_max_score[self.current_user][self.current_arm] = reward
+        # TODO check this
+        # update the mean score of the current arm
+        self.users_mean[self.current_user][self.current_arm] = \
+            (self.users_mean[self.current_user][self.current_arm] * (self.users_counter[self.current_user][self.current_arm] - 1) + reward) / \
+            self.users_counter[self.current_user][self.current_arm]
+        # update the satisfaction of the current arm
+        self.users_satisfaction[self.current_user][self.current_arm] = \
+            self.users_max_score[self.current_user][self.current_arm] - self.users_mean[self.current_user][self.current_arm]
+
 
         # update the alpha and beta of the current arm
         self.users_alpha[self.current_user][self.current_arm] += reward
