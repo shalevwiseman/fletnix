@@ -2,6 +2,7 @@ import numpy as np
 from tqdm import tqdm
 import time
 from id_123456789_987654321 import Planner
+import csv
 
 NUM_ROUNDS = 10 ** 6
 PHASE_LEN = 10 ** 2
@@ -77,19 +78,29 @@ class MABSimulation:
 
             if (i + 1) % self.phase_len == 0 and with_deactivation:  # satisfied only when it is the end of the phase
                 self.deactivate_arms()
-            """# want to print somthing 10 times during the simulation
-            if (i + 1) % (self.num_rounds // 10) == 0:
-                print("max score: " + str(planner.users_max_score))
-                print(f"user{user_context} got samples {str(planner.get_sample())} \n and chose arm {chosen_arm} and got reward {reward}")"""
 
-        print("max score: " + str(planner.users_max_score))
+            if (i + 1) % (self.num_rounds // 10) == 0:
+
+                for j in range(planner.num_users):
+
+                    alpha_string = f"alpha, {j:d}, " + ", ".join([str(x) for x in planner.users_alpha[j, :].tolist()])
+                    beta_string = f"beta, {j:d}, " + ", ".join([str(x) for x in planner.users_beta[j, :].tolist()])
+                    alpha_values = alpha_string.split(', ')
+                    beta_values = beta_string.split(', ')
+                    with open("results.csv", 'a', newline='') as file:
+                        writer = csv.writer(file)
+                        writer.writerow(alpha_values)
+                        writer.writerow(beta_values)
+
+
+
+        print("total counter: " + str(planner.users_counter))
 
         if time.time() - begin_time > TIME_CAP:
             print("the planner operation is too slow")
             return 0
 
         return total_reward
-
 
 
 def get_simulation_params(simulation_num):
@@ -108,6 +119,7 @@ def get_simulation_params(simulation_num):
             'ERM': np.array([[0.5, 0],
                              [0, 0.5]]),
         },
+        #  |_________|___________|__________|___________|___________|___________|___________|___________|___________|
         {
             'num_rounds': NUM_ROUNDS,
             'phase_len': PHASE_LEN,
@@ -115,7 +127,8 @@ def get_simulation_params(simulation_num):
             'num_users': 2,
             'users_distribution': np.array([0.1, 0.9]),
             'arms_thresh': np.array([0.6, 0.1]) * PHASE_LEN,
-            'ERM': np.array([[0.5, 0], [0, 0.5]])
+            'ERM': np.array([[0.5, 0],
+                             [0, 0.5]])
         },
         {
             'num_rounds': NUM_ROUNDS,
@@ -167,11 +180,18 @@ def run_simulation(simulation_num):
 
 
 def main():
-    for i in range(1):
+    total_reward = 0
+    with open('results.csv', 'w') as f:
+        writer = csv.writer(f)
+    for i in range(5):
         reward = run_simulation(i)
+        total_reward += reward
         print("The total reward of your planner is " + str(reward))
+
+
 
 
 if __name__ == '__main__':
     main()
+
 
