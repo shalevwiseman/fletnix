@@ -182,12 +182,12 @@ def main():
     total_reward = 0
     with open('results.csv', 'w') as f:
         writer = csv.writer(f)
-    for i in range(1):
+    for i in range(5):
         reward = run_simulation(i)
         total_reward += reward
         print("The total reward of your planner is " + str(reward))
 
-    print("The total reward of your planner is " + str(total_reward))
+
 
 
 if __name__ == '__main__':
