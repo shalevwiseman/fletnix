@@ -33,6 +33,7 @@ class Planner:
         self.keeping_length = self.num_rounds
         self.round_to_thrash = arms_thresh
         self.user_not_to_choose = {}
+
         self.deactivated_arms = set()
         for i in range(num_users):
             self.user_not_to_choose[i] = set()
