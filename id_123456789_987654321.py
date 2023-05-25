@@ -60,14 +60,14 @@ class Planner:
                 self.arm_use_per_phase = np.zeros(self.num_arms)
                 self.num_round_per_phase = 0
             # TODO: think about somthing better
-            if self.num_round_per_phase < 50:
+            if self.num_round_per_phase < 40:
                 self.max_sample()
                 return self.current_arm
         # decide if we want to hold the arms or not
 
 
             for i in range(self.num_arms):
-                if (self.arm_use_per_phase[i] < self.arms_thresh[i]):
+                if (self.arm_use_per_phase[i] < self.arms_thresh[i]) and (i not in self.user_not_to_choose[self.current_user]):
                     self.current_arm = i
                     self.arm_use_per_phase[i] += 1
                     return self.current_arm
