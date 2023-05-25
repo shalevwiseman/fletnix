@@ -93,7 +93,6 @@ class MABSimulation:
 
 
 
-        print("total counter: " + str(planner.users_counter))
 
         if time.time() - begin_time > TIME_CAP:
             print("the planner operation is too slow")
@@ -191,7 +190,7 @@ def main():
         total_reward += reward
         print("The total reward of your planner is " + str(reward))
 
-
+    print("The mean total reward of your planner is " + str(total_reward/5))
 
 
 if __name__ == '__main__':
