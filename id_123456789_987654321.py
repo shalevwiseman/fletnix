@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
+# TODO: remove this import
+# from scipy.stats import beta
 
 
 class Planner:
@@ -15,7 +17,6 @@ class Planner:
         self.num_users = num_users
         self.arms_thresh = arms_thresh
         self.phase_counter = 0
-        self.round_per_phase = 0
         self.users_distribution = users_distribution
         self.users_alpha = np.full((num_users, num_arms), 0.1)
         self.users_beta = np.full((num_users, num_arms), 0.1)
@@ -29,9 +30,14 @@ class Planner:
         self.current_arm = None
         self.current_round = 0
         self.keep_arms = True
+        self.keeping_length = self.num_rounds
+        self.round_to_thrash = arms_thresh
         self.user_not_to_choose = {}
+
+        self.deactivated_arms = set()
         for i in range(num_users):
             self.user_not_to_choose[i] = set()
+        # TODO: think about initial conditions for keeping or not an arm
 
 
 
@@ -42,54 +48,66 @@ class Planner:
         :input: the sampled user (integer in the range [0,num_users-1])
         :output: the chosen arm, content to show to the user (integer in the range [0,num_arms-1])
         """
+        # update the current user
         self.current_user = user_context
-        self.current_round += 1
-        self.num_round_per_phase += 1
-        if abs(self.users_distribution[0] - self.users_distribution[1]) > 0.4:
+
+        # update the current round
+        # checks for every phase round.
+        if self.current_round > 0 and self.current_round % self.phase_len == 0:
+            self.phase_counter += 1
+            self.num_round_per_phase = 0
+
+            # for every arm check if it is deactivated
+            for i in range(self.num_arms):
+                if self.arm_use_per_phase[i] < self.arms_thresh[i]:
+                    self.deactivated_arms.add(i)
+            self.arm_use_per_phase = np.zeros(self.num_arms)
+            self.round_to_thrash = self.arms_thresh
+        if (len(self.deactivated_arms) == self.num_arms - 1):
             self.keep_arms = False
 
-        if (self.current_round % self.phase_len == 0):
-            for i in range(self.num_arms):
-                if (self.arm_use_per_phase[i] < self.arms_thresh[i]):
-                    self.keep_arms = False
-                    for j in range(self.num_users):
-                        self.user_not_to_choose[j].add(i)
+        self.current_round += 1
+        # update the current phase
+        self.num_round_per_phase += 1
 
-        if (self.keep_arms) and (self.current_round <= self.num_rounds):
-            if self.current_round % self.phase_len == 0:
-                self.arm_use_per_phase = np.zeros(self.num_arms)
-                self.num_round_per_phase = 0
-            # TODO: think about somthing better
-            if self.num_round_per_phase < 50:
+
+        if (self.keep_arms == True) and (self.current_round < self.keeping_length):
+            total_rounds_to_thrash = 0
+            # check if we need to force thrash
+            for i in range(self.num_arms):
+                if self.round_to_thrash[i] > 0:
+                    total_rounds_to_thrash += self.round_to_thrash[i]
+            if (self.num_round_per_phase > total_rounds_to_thrash):
                 self.max_sample()
+                self.arm_use_per_phase[self.current_arm] += 1
+                self.round_to_thrash[self.current_arm] -= 1
                 return self.current_arm
-        # decide if we want to hold the arms or not
+            else:
+                # TODO: think about somthing better
+                for i in range(self.num_arms):
+                    if (i not in self.deactivated_arms) and (self.arm_use_per_phase[i] < self.arms_thresh[i]):
+                        self.current_arm = i
+                        self.users_counter[self.current_user][self.current_arm] += 1
+                        self.arm_use_per_phase[self.current_arm] += 1
+                        self.round_to_thrash[self.current_arm] -= 1
+                        return self.current_arm
 
-
-            for i in range(self.num_arms):
-                if (self.arm_use_per_phase[i] < self.arms_thresh[i]):
-                    self.current_arm = i
-                    self.arm_use_per_phase[i] += 1
-                    return self.current_arm
-
-
-
+        # TODO: think about the expectation of keep arm or not, if we want to keep, self.keeping_length =
+        #  self.num_rounds
         self.max_sample()
-
-        # TODO: think about somthing better, maybe use mean score instead of max score
-
-        # every quarter of the phase want to check for every user if he has 0 max score for an arm
-        # if so, we want to add it to the set of arms not to choose for this user
-
-        """for i in range(self.num_users):
-            for j in range(self.num_arms):
-                if (self.users_max_score[i][j] == 0) and (self.users_counter[i][j] >= 1):
-                    self.user_not_to_choose[i].add(j)"""
-
-
-
-
+        self.arm_use_per_phase[self.current_arm] += 1
+        self.round_to_thrash[self.current_arm] -= 1
         return self.current_arm
+
+
+
+
+
+
+
+
+
+
 
     def notify_outcome(self, reward):
         """
@@ -123,19 +141,22 @@ class Planner:
         current_sample = np.zeros(self.num_arms)
         # for each arm, sample a score from the beta distribution of the current user and the current arm
         for i in range(self.num_arms):
-            if i not in self.user_not_to_choose[self.current_user]:
+            if i not in self.user_not_to_choose[self.current_user] and i not in self.deactivated_arms:
                 current_sample[i] = np.random.beta(self.users_alpha[self.current_user][i],
                                                    self.users_beta[self.current_user][i])
         if (current_sample.size != 0):
             self.current_arm = np.argmax(current_sample)
 
-        self.users_counter[self.current_user][self.current_arm] += 1
-        self.arm_use_per_phase[self.current_arm] += 1
+
+
 
         for i in range(self.num_users):
             for j in range(self.num_arms):
                 if (self.users_counter[i][j] > 1) and (self.users_max_score[i][j] == 0):
                     self.user_not_to_choose[i].add(j)
+
+
+
 
 
 

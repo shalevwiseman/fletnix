@@ -94,7 +94,6 @@ class MABSimulation:
 
 
 
-        print("total counter: " + str(planner.users_counter))
 
         if time.time() - begin_time > TIME_CAP:
             print("the planner operation is too slow")
@@ -119,6 +118,9 @@ def get_simulation_params(simulation_num):
             'ERM': np.array([[0.5, 0],
                              [0, 0.5]]),
         },
+        # 50 * 0.5 = 25, 50 * 0.5 + 50 * 0.5 * 0.5 = 25 + 12.5 = 37.5
+        # E = user_dist[i] * phase len * ERM[i][j]  ,
+        # E = user_dist[i] * phase len * ERM[i][j] + 50 * user_dist[i] * phase len * ERM[i][j]
         #  |_________|___________|__________|___________|___________|___________|___________|___________|___________|
         {
             'num_rounds': NUM_ROUNDS,
@@ -137,7 +139,8 @@ def get_simulation_params(simulation_num):
             'num_users': 2,
             'users_distribution': np.array([0.5, 0.5]),
             'arms_thresh': np.array([0.48, 0.48]) * PHASE_LEN,
-            'ERM': np.array([[0.5, 0], [0, 0.5]])
+            'ERM': np.array([[0.5, 0],
+                             [0, 0.5]])
         },
         {
             'num_rounds': NUM_ROUNDS,
@@ -188,7 +191,7 @@ def main():
         total_reward += reward
         print("The total reward of your planner is " + str(reward))
 
-
+    print("The mean total reward of your planner is " + str(total_reward/5))
 
 
 if __name__ == '__main__':
