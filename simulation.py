@@ -118,9 +118,6 @@ def get_simulation_params(simulation_num):
             'ERM': np.array([[0.5, 0],
                              [0, 0.5]]),
         },
-        # 50 * 0.5 = 25, 50 * 0.5 + 50 * 0.5 * 0.5 = 25 + 12.5 = 37.5
-        # E = user_dist[i] * phase len * ERM[i][j]  ,
-        # E = user_dist[i] * phase len * ERM[i][j] + 50 * user_dist[i] * phase len * ERM[i][j]
         #  |_________|___________|__________|___________|___________|___________|___________|___________|___________|
         {
             'num_rounds': NUM_ROUNDS,
@@ -149,7 +146,9 @@ def get_simulation_params(simulation_num):
             'num_users': 3,
             'users_distribution': np.array([0.5, 0.25, 0.25]),
             'arms_thresh': np.array([0, 0.33, 0.33]) * PHASE_LEN,
-            'ERM': np.array([[1, 0.5, 0], [0, 2 / 3, 1 / 2], [0, 0, 1 / 2]])
+            'ERM': np.array([[1, 0.5, 0],
+                             [0, 2 / 3, 1 / 2],
+                             [0, 0, 1 / 2]])
         },
         {
             'num_rounds': NUM_ROUNDS,
@@ -158,7 +157,8 @@ def get_simulation_params(simulation_num):
             'num_users': 2,
             'users_distribution': np.array([0.6, 0.4]),
             'arms_thresh': np.array([0, 0.4, 0.4]) * PHASE_LEN,
-            'ERM': np.array([[0.5, 0, 0], [0, (1 + (4 * (NUM_ROUNDS ** (-1 / 3)))) / 2, 1 / 2]])
+            'ERM': np.array([[0.5, 0, 0],
+                             [0, (1 + (4 * (NUM_ROUNDS ** (-1 / 3)))) / 2, 1 / 2]])
         },
     ]
     return simulations[simulation_num]
