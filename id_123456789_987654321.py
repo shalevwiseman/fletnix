@@ -33,6 +33,11 @@ class Planner:
         self.round_to_thrash = copy.deepcopy(arms_thresh)
         self.user_not_to_choose = {}
         self.deactivated_arms = set()
+
+
+
+
+
         for i in range(num_users):
             self.user_not_to_choose[i] = set()
         # TODO: think about initial conditions for keeping or not an arm
@@ -53,6 +58,21 @@ class Planner:
         if (self.current_round + 1) % self.phase_len == 0 and self.current_round > 0:
             # reset the round counter
             self.num_round_per_phase = 0
+            """if self.current_round + 1 == 100_000:
+                estimated_ERM = np.zeros((self.num_users, self.num_arms))
+                for i in range(self.num_users):
+                    for j in range(self.num_arms):
+                        if j not in self.user_not_to_choose[i]:
+                            estimated_ERM[i][j] = self.users_alpha[i][j] / (self.users_alpha[i][j] + self.users_beta[i][j])
+                        else:
+                            estimated_ERM[i][j] = 0
+                E_keep = 0
+                E_not_keep = 0
+                for i in range(self.num_users):
+                    for j in range(self.num_arms):
+                        if j not in self.user_not_to_choose[i]:
+                            E_keep += self.users_distribution[i][j] * estimated_ERM[i][j]*self.phase_len
+                            E_not_keep += self.users_distribution[i][j] * (1 - estimated_ERM[i][j])"""
 
 
             # for every arm check if it is deactivated
